@@ -31,12 +31,6 @@ def main():
     st.set_page_config(page_title="Hidrosedi - Tools", page_icon="💧", layout="centered")
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-    # --- SECURITY CHECK ---
-    # password = st.sidebar.text_input("Chave de Acesso", type="password")
-    # if password != "hidro2026":
-    #     st.sidebar.warning("Acesso restrito.")
-    #     st.stop()
-
     # Header
     c1, c2 = st.columns([1, 4])
     with c1:
@@ -48,14 +42,7 @@ def main():
 
     # Sidebar Config
     st.sidebar.markdown("### Configuração")
-
-    mode = st.sidebar.radio(
-        "Método de Filtragem:",
-        ("Horas Exatas (00 min)", "Regularização (Nearest)")
-    )
-    
-    st.sidebar.markdown("---")
-    st.sidebar.info("Reconhecimento automático:\n- .dat (Tabulação)\n- .csv / .txt (Vírgula)")
+    st.sidebar.info("A inteligência de filtragem agora é 100% automática!\n\n**Reconhecimento:**\n- .dat (Tabulação)\n- .csv / .txt (Vírgula)\n- Horários Exatos ou Quebrados")
 
     # Main App
     st.write("")
@@ -66,25 +53,22 @@ def main():
     if uploaded:
         st.markdown("---")
         try:
-            # 1. Identificar a extensão e definir o separador
+            # 1. Identificar a extensão e definir o separador automaticamente
             file_ext = uploaded.name.split('.')[-1].lower()
-            if file_ext == 'dat':
-                delimiter = '\t'
-            else:
-                delimiter = ','
+            delimiter = '\t' if file_ext == 'dat' else ','
             
             # 2. Carregar os dados
             df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
             
-            # 3. Forçar a primeira coluna a ser 'Data'
+            # 3. Forçar a primeira coluna a ser 'Data' (sem precisar de selectbox)
             primeira_coluna = df.columns[0]
             df = df.rename(columns={primeira_coluna: 'Data'})
 
-            # 4. Preview opcional dos dados crus (antes de filtrar)
+            # Pré-visualização opcional dos dados crus (antes de filtrar)
             with st.expander("👀 Ver arquivo original sem formatação"):
                 st.dataframe(df.head(15), use_container_width=True)
 
-            # Datetime conversion
+            # 4. Conversão para Datetime
             try:
                 df['Data'] = pd.to_datetime(df['Data'], dayfirst=True)
             except ValueError:
@@ -93,22 +77,34 @@ def main():
             df = df.dropna(subset=['Data'])
             df = df.sort_values('Data')
 
-            # Processing Logic
-            if "Exatas" in mode:
-                res = df[df['Data'].dt.minute == 0].copy()
-            else:
-                grid = pd.date_range(
-                    start=df['Data'].min().floor('h'),
-                    end=df['Data'].max().ceil('h'),
-                    freq='h'
-                )
-                res = pd.merge_asof(pd.DataFrame({'Data': grid}), df, on='Data', direction='nearest')
+            # 5. Inteligência Única de Filtragem (Grade de Tempo)
+            # Cria uma grade perfeita de hora em hora
+            grid = pd.date_range(
+                start=df['Data'].min().floor('h'),
+                end=df['Data'].max().ceil('h'),
+                freq='h'
+            )
+            
+            # O merge_asof alinha os dados originais à grade perfeita.
+            # - Se houver hora exata, pega a exata (distância 0).
+            # - Se for horário quebrado, puxa o mais próximo.
+            # - tolerance=30min evita mesclar dados distantes caso haja buracos sem leitura.
+            res = pd.merge_asof(
+                pd.DataFrame({'Data': grid}), 
+                df, 
+                on='Data', 
+                direction='nearest',
+                tolerance=pd.Timedelta('30min')
+            )
+            
+            # Remove as horas da grade que ficaram vazias (sem dados num raio de 30 min)
+            res = res.dropna()
 
-            # Formatting para manter o visual limpo no Excel
+            # 6. Formatação Final
             res['Data'] = res['Data'].dt.strftime('%d/%m/%Y %H:%M')
 
-            # Output e Pré-visualização Final
-            st.success(f"Filtragem concluída! Total de registros: {len(res)}")
+            # Output
+            st.success(f"Filtragem concluída automaticamente! Total de registros: {len(res)}")
             
             st.markdown("#### Pré-visualização da Planilha Filtrada")
             # st.dataframe exibe uma tabela interativa estilo Excel com barra de rolagem
@@ -122,8 +118,4 @@ def main():
             )
 
         except Exception as e:
-            st.error(f"Erro de Processamento: {e}")
-            st.info("Dica: Verifique se o arquivo não está corrompido ou se possui formatações fora do padrão.")
-
-if __name__ == "__main__":
-    main()
+            st.error(f"Erro de Processamento:
