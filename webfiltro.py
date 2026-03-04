@@ -29,7 +29,7 @@ def get_excel_buffer(df):
 
 def main():
     st.set_page_config(page_title="Hidrosedi - Tools", page_icon="💧", layout="centered")
-    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+    #st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
     # --- SECURITY CHECK ---
     # password = st.sidebar.text_input("Chave de Acesso", type="password")
@@ -135,3 +135,4 @@ def main():
         except Exception as e:
             st.error(f"Erro de Leitura: {e}")
             st.info("Dica: Verifique se o separador correto foi escolhido na barra lateral.")
+
