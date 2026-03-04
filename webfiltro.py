@@ -48,62 +48,48 @@ def main():
 
     # Sidebar Config
     st.sidebar.markdown("### Configuração")
-    
-    # Adicionado suporte a separadores comuns em .dat
-    sep_map = {"Ponto e vírgula (;)" : ";", "Tabulação (\\t)": "\t", "Vírgula (,)": ",", "Espaço": " "}
-    sep_label = st.sidebar.selectbox("Separador do Arquivo", options=list(sep_map.keys()))
-    delimiter = sep_map[sep_label]
 
     mode = st.sidebar.radio(
-        "Método:",
+        "Método de Filtragem:",
         ("Horas Exatas (00 min)", "Regularização (Nearest)")
     )
     
     st.sidebar.markdown("---")
-    st.sidebar.info("Suporte: .csv, .dat, .txt")
+    st.sidebar.info("Reconhecimento automático:\n- .dat (Tabulação)\n- .csv / .txt (Vírgula)")
 
     # Main App
     st.write("")
     st.markdown("### Carregue seu arquivo")
     
-    # Atualizado para aceitar .dat e .txt
     uploaded = st.file_uploader("Arquivo de dados", type=['csv', 'dat', 'txt'])
 
     if uploaded:
-        st.markdown("### Resultado")
+        st.markdown("---")
         try:
-            # Load Data com o separador selecionado
+            # 1. Identificar a extensão e definir o separador
+            file_ext = uploaded.name.split('.')[-1].lower()
+            if file_ext == 'dat':
+                delimiter = '\t'
+            else:
+                delimiter = ','
+            
+            # 2. Carregar os dados
             df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
             
-            # Pegamos todas as colunas do arquivo
-            colunas_disponiveis = df.columns.tolist()
-            
-            # Tenta adivinhar qual é a coluna de data para facilitar a vida do usuário
-            sugestao_index = 0
-            for i, col in enumerate(colunas_disponiveis):
-                nome_limpo = str(col).strip().lower()
-                if nome_limpo in ['data', 'date', 'datahora', 'data_hora', 'timestamp', 'tempo', 't']:
-                    sugestao_index = i
-                    break
+            # 3. Forçar a primeira coluna a ser 'Data'
+            primeira_coluna = df.columns[0]
+            df = df.rename(columns={primeira_coluna: 'Data'})
 
-            # Cria um selectbox para o usuário confirmar ou escolher a coluna correta
-            coluna_selecionada = st.selectbox(
-                "Qual coluna contém as Datas e Horas?", 
-                options=colunas_disponiveis,
-                index=sugestao_index
-            )
-
-            # Renomeia a coluna escolhida para 'Data' para manter a compatibilidade com o resto do seu código
-            df = df.rename(columns={coluna_selecionada: 'Data'})
+            # 4. Preview opcional dos dados crus (antes de filtrar)
+            with st.expander("👀 Ver arquivo original sem formatação"):
+                st.dataframe(df.head(15), use_container_width=True)
 
             # Datetime conversion
             try:
                 df['Data'] = pd.to_datetime(df['Data'], dayfirst=True)
             except ValueError:
-                # Fallback format caso o automático falhe
                 df['Data'] = pd.to_datetime(df['Data'], format='%d/%m/%Y %H:%M', errors='coerce')
             
-            # Remove linhas onde a conversão de data falhou (NaT)
             df = df.dropna(subset=['Data'])
             df = df.sort_values('Data')
 
@@ -118,12 +104,15 @@ def main():
                 )
                 res = pd.merge_asof(pd.DataFrame({'Data': grid}), df, on='Data', direction='nearest')
 
-            # Formatting
+            # Formatting para manter o visual limpo no Excel
             res['Data'] = res['Data'].dt.strftime('%d/%m/%Y %H:%M')
 
-            # Output
-            st.success(f"Processado: {len(res)} registros.")
-            st.dataframe(res.head(), use_container_width=True)
+            # Output e Pré-visualização Final
+            st.success(f"Filtragem concluída! Total de registros: {len(res)}")
+            
+            st.markdown("#### Pré-visualização da Planilha Filtrada")
+            # st.dataframe exibe uma tabela interativa estilo Excel com barra de rolagem
+            st.dataframe(res, use_container_width=True, height=350) 
 
             st.download_button(
                 label="📥 Baixar Excel (.xlsx)",
@@ -133,10 +122,8 @@ def main():
             )
 
         except Exception as e:
-            st.error(f"Erro de Leitura: {e}")
-
-            st.info("Dica: Verifique se o separador correto foi escolhido na barra lateral.")
+            st.error(f"Erro de Processamento: {e}")
+            st.info("Dica: Verifique se o arquivo não está corrompido ou se possui formatações fora do padrão.")
 
 if __name__ == "__main__":
- main()
- 
+    main()
