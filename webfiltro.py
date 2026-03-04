@@ -53,18 +53,27 @@ def main():
     if uploaded:
         st.markdown("---")
         try:
-           # 1. Separador fixo como vírgula
+            # 1. Separador fixo como vírgula
             delimiter = ','
             
-            # 2. Carregar os dados
-            df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
+            # Ler a primeira linha para detetar se é um ficheiro de datalogger (TOA5)
+            primeira_linha = uploaded.readline().decode('utf-8', errors='ignore')
+            uploaded.seek(0) # Voltar o ponteiro para o início para que o pandas consiga ler desde o princípio
             
-            # 3. Forçar a primeira coluna a ser 'Data' (sem precisar de selectbox)
+            # 2. Carregar os dados com a estrutura correta
+            if "TOA5" in primeira_linha:
+                # Formato Campbell Scientific: Colunas na 2ª linha (header=1). Ignorar linhas de unidades (skiprows=[2, 3])
+                df = pd.read_csv(uploaded, sep=delimiter, header=1, skiprows=[2, 3], dayfirst=True)
+            else:
+                # Formato normal (uma única linha de cabeçalho)
+                df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
+            
+            # 3. Forçar a primeira coluna a ser 'Data'
             primeira_coluna = df.columns[0]
             df = df.rename(columns={primeira_coluna: 'Data'})
 
             # Pré-visualização opcional dos dados crus (antes de filtrar)
-            with st.expander("👀 Ver arquivo original sem formatação"):
+            with st.expander("👀 Ver ficheiro original sem formatação"):
                 st.dataframe(df.head(15), use_container_width=True)
 
             # 4. Conversão para Datetime
@@ -122,4 +131,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
