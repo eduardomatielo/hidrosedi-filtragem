@@ -88,6 +88,9 @@ def main():
                 st.error("Erro: Nenhuma data válida encontrada no ficheiro. Verifique o formato.")
                 st.stop()
                 
+                # --- CORREÇÃO: Ignorar dados de quando o relógio do datalogger desregulou ---
+            df = df[df['Data'].dt.year > 2010]
+                
             df = df.sort_values('Data')
 
             # 5. Inteligência Única de Filtragem (Grelha de Tempo)
@@ -134,3 +137,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
