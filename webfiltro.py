@@ -134,4 +134,9 @@ def main():
 
         except Exception as e:
             st.error(f"Erro de Leitura: {e}")
+
             st.info("Dica: Verifique se o separador correto foi escolhido na barra lateral.")
+
+if __name__ == "__main__":
+ main()
+ 
