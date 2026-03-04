@@ -42,7 +42,7 @@ def main():
 
     # Sidebar Config
     st.sidebar.markdown("### Configuração")
-    st.sidebar.info("A inteligência de filtragem agora é 100% automática!\n\n**Reconhecimento:**\n- .dat (Tabulação)\n- .csv / .txt (Vírgula)\n- Horários Exatos ou Quebrados")
+    st.sidebar.info("A inteligência de filtragem agora é 100% automática!\n\n**Reconhecimento:**\n- Formato Padrão ou Datalogger TOA5\n- Separador fixo: Vírgula (,)\n- Horários Exatos ou Quebrados")
 
     # Main App
     st.write("")
@@ -56,47 +56,43 @@ def main():
             # 1. Separador fixo como vírgula
             delimiter = ','
             
-            # Ler a primeira linha para detetar se é um ficheiro de datalogger (TOA5)
+            # Ler a primeira linha para detetar se é um arquivo de datalogger (TOA5)
             primeira_linha = uploaded.readline().decode('utf-8', errors='ignore')
-            uploaded.seek(0) # Voltar o ponteiro para o início para que o pandas consiga ler desde o princípio
+            uploaded.seek(0) 
             
             # 2. Carregar os dados com a estrutura correta
             if "TOA5" in primeira_linha:
-                # Formato Campbell Scientific: Colunas na 2ª linha (header=1). Ignorar linhas de unidades (skiprows=[2, 3])
-                df = pd.read_csv(uploaded, sep=delimiter, header=1, skiprows=[2, 3], dayfirst=True)
+                df = pd.read_csv(uploaded, sep=delimiter, header=1, skiprows=[2, 3])
             else:
-                # Formato normal (uma única linha de cabeçalho)
-                df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
+                df = pd.read_csv(uploaded, sep=delimiter)
             
             # 3. Forçar a primeira coluna a ser 'Data'
             primeira_coluna = df.columns[0]
             df = df.rename(columns={primeira_coluna: 'Data'})
 
             # Pré-visualização opcional dos dados crus (antes de filtrar)
-            with st.expander("👀 Ver ficheiro original sem formatação"):
+            with st.expander("👀 Ver arquivo original sem formatação"):
                 st.dataframe(df.head(15), use_container_width=True)
 
-            # 4. Conversão para Datetime
-            try:
-                df['Data'] = pd.to_datetime(df['Data'], dayfirst=True)
-            except ValueError:
-                df['Data'] = pd.to_datetime(df['Data'], format='%d/%m/%Y %H:%M', errors='coerce')
+            # 4. Conversão para Datetime flexível (Resolve o problema do datalogger)
+            df['Data'] = pd.to_datetime(df['Data'], errors='coerce')
             
+            # Remove linhas que não puderam ser convertidas em data
             df = df.dropna(subset=['Data'])
+            
+            if df.empty:
+                st.error("Erro: Nenhuma data válida encontrada no arquivo. Verifique o formato.")
+                st.stop()
+                
             df = df.sort_values('Data')
 
             # 5. Inteligência Única de Filtragem (Grade de Tempo)
-            # Cria uma grade perfeita de hora em hora
             grid = pd.date_range(
                 start=df['Data'].min().floor('h'),
                 end=df['Data'].max().ceil('h'),
                 freq='h'
             )
             
-            # O merge_asof alinha os dados originais à grade perfeita.
-            # - Se houver hora exata, pega a exata (distância 0).
-            # - Se for horário quebrado, puxa o mais próximo.
-            # - tolerance=30min evita mesclar dados distantes caso haja buracos sem leitura.
             res = pd.merge_asof(
                 pd.DataFrame({'Data': grid}), 
                 df, 
@@ -105,7 +101,6 @@ def main():
                 tolerance=pd.Timedelta('30min')
             )
             
-            # Remove as horas da grade que ficaram vazias (sem dados num raio de 30 min)
             res = res.dropna()
 
             # 6. Formatação Final
@@ -115,7 +110,6 @@ def main():
             st.success(f"Filtragem concluída automaticamente! Total de registros: {len(res)}")
             
             st.markdown("#### Pré-visualização da Planilha Filtrada")
-            # st.dataframe exibe uma tabela interativa estilo Excel com barra de rolagem
             st.dataframe(res, use_container_width=True, height=350) 
 
             st.download_button(
@@ -131,5 +125,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
