@@ -118,4 +118,8 @@ def main():
             )
 
         except Exception as e:
-            st.error(f"Erro de Processamento:
+            st.error(f"Erro de Processamento: {e}")
+            st.info("Dica: Verifique se o arquivo não está corrompido ou se possui formatações fora do padrão.")
+
+if __name__ == "__main__":
+    main()
