@@ -53,9 +53,8 @@ def main():
     if uploaded:
         st.markdown("---")
         try:
-            # 1. Identificar a extensão e definir o separador automaticamente
-            file_ext = uploaded.name.split('.')[-1].lower()
-            delimiter = '\t' if file_ext == 'dat' else ','
+           # 1. Separador fixo como vírgula
+            delimiter = ','
             
             # 2. Carregar os dados
             df = pd.read_csv(uploaded, sep=delimiter, dayfirst=True)
@@ -123,3 +122,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
