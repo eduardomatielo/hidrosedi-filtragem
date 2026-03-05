@@ -4,19 +4,72 @@ import streamlit as st
 from io import BytesIO
 from PIL import Image
 
-# Configuração de estilo CSS (Clean & Corporate)
+# Configuração de estilo CSS (Modern & Floating UI)
 CUSTOM_CSS = """
 <style>
-    [data-testid="stSidebar"] { background-color: #a3cbc1; }
+    /* Fundo da tela principal (cinza bem claro para o contraste) */
+    [data-testid="stAppViewContainer"] {
+        background-color: #f4f7f9;
+    }
+
+    /* --- Efeito Flutuante na Barra Lateral --- */
+    /* Deixa o container raiz transparente */
+    [data-testid="stSidebar"] {
+        background-color: transparent !important;
+    }
+    /* Cria o "card" branco flutuante dentro da barra */
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #ffffff;
+        margin: 16px;
+        border-radius: 20px;
+        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.08);
+        height: calc(100vh - 32px); /* Altura total menos a margem */
+    }
+
+    /* Textos da barra lateral */
+    [data-testid="stSidebar"] * {
+        color: #334155;
+    }
+
+    /* --- Botões Modernos (com gradiente e sombra) --- */
     .stButton>button {
-        background-color: #57a4a5; color: white; border: none; border-radius: 8px; font-weight: 600;
+        background: linear-gradient(135deg, #57a4a5 0%, #3e8283 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 8px 16px;
+        box-shadow: 0 4px 12px rgba(87, 164, 165, 0.25);
+        transition: all 0.3s ease;
     }
-    .stButton>button:hover { background-color: #468e8f; color: white; }
+    .stButton>button:hover {
+        transform: translateY(-2px); /* Efeito de pular ao passar o mouse */
+        box-shadow: 0 6px 16px rgba(87, 164, 165, 0.4);
+        color: white;
+    }
+
+    /* --- Caixa de Upload (File Uploader) --- */
     [data-testid="stFileUploader"] {
-        background-color: #f0f7f6; border: 1px dashed #57a4a5; border-radius: 8px; padding: 15px;
+        background-color: #ffffff;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
     }
-    h1, h2, h3 { color: #2c3e50; }
-    [data-testid="stSidebar"] * { color: #ffffff; font-weight: 500; }
+    [data-testid="stFileUploader"]:hover {
+        border-color: #57a4a5;
+        background-color: #fcfefe;
+    }
+
+    /* Títulos e textos principais */
+    h1, h2, h3 {
+        color: #1e293b;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    p, span, label {
+        color: #475569;
+    }
 </style>
 """
 
@@ -137,4 +190,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
