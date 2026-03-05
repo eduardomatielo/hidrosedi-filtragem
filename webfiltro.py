@@ -91,7 +91,7 @@ def main():
             st.image(Image.open("hidrosedi.jpg"), use_container_width=True)
     with c2:
         st.title("Filtragem de Planilhas")
-        st.markdown("<h5 style='color: #57a4a5;'>Processamento de Dados Hidrológicos</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #57a4a5;'>Das Estações de Monitoramento</h5>", unsafe_allow_html=True)
 
     # Sidebar Config
     st.sidebar.markdown("### Configuração")
@@ -190,5 +190,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
